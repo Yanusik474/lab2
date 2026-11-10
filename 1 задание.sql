@@ -1,17 +1,17 @@
---выбрать названия и цены за грамм корреспонденции, сумма измерений, сумма измерений которых по длине, ширине и высотепревышает 30см
+--1 выбрать названия и цены за грамм корреспонденции, сумма измерений, сумма измерений которых по длине, ширине и высотепревышает 30см
 SELECT DISTINCT mt."mail_type_name", mc."price_per_gram"
 FROM "mail_types" mt
 JOIN "mailing_costs" mc ON mt."mail_type_code" = mc."mail_type_code"
 WHERE (mt."max_length_mm" + mt."max_width_mm" + mt."max_height_mm") > 300;
 
---выбрать виды корреспонденции,где наценка за срочность больше 50% за отправку внутри страны
+--2 выбрать виды корреспонденции,где наценка за срочность больше 50% за отправку внутри страны
 SELECT DISTINCT mt."mail_type_code", mt."mail_type_name"
 FROM "mail_types" mt
 JOIN "mailing_costs" mc ON mt."mail_type_code" = mc."mail_type_code"
 WHERE mc."distance" IN ('Up to 100 km', '100 to 1000 km')
   AND mc."urgency_surcharge" > 50;
 
---создать таблицу содержание данные двух вопросов с указанием минимальных и максимальных размеров
+--3 создать таблицу содержание данные двух вопросов с указанием минимальных и максимальных размеров
 DROP TABLE IF EXISTS "selected_mail_types";
 
 CREATE TABLE "selected_mail_types" AS
@@ -27,7 +27,7 @@ WHERE mc."distance" IN ('Up to 100 km', '100 to 1000 km')
 
 ALTER TABLE "selected_mail_types" ADD PRIMARY KEY ("mail_type_code");
 
---добавит в созданную таблицу виды корреспонденции упоковывающиеся в коробки, максимальные размеры которые не указаны
+--4 добавит в созданную таблицу виды корреспонденции упоковывающиеся в коробки, максимальные размеры которые не указаны
 INSERT INTO "selected_mail_types" 
 ("mail_type_code", "mail_type_name", "min_weight_g", "max_weight_g", "min_length_mm", "min_width_mm", "min_height_mm", "max_length_mm", "max_width_mm", "max_height_mm")
 SELECT "mail_type_code", "mail_type_name", "min_weight_g", "max_weight_g", "min_length_mm", "min_width_mm", "min_height_mm", "max_length_mm", "max_width_mm", "max_height_mm"
@@ -35,15 +35,28 @@ FROM "mail_types"
 WHERE "packaging" = 'Box'
   AND ("max_length_mm" IS NULL OR "max_width_mm" IS NULL OR "max_height_mm" IS NULL);
 
---высозданные таблицы у всехвидов корреспонденции, соотвествующих размеров формата А5 или меньше,изменить название на "письмо"
+--5 высозданные таблицы у всехвидов корреспонденции, соотвествующих размеров формата А5 или меньше,изменить название на "письмо"
 UPDATE "selected_mail_types"
 SET "mail_type_name" = 'Letter'
 WHERE "max_length_mm" <= 210 AND "max_width_mm" <= 148;
 
---удалить из созданной таблицы все виды корреспонденции, которые можно отправить только внутри страны
+--6 удалить из созданной таблицы все виды корреспонденции, которые можно отправить только внутри страны
 DELETE FROM "selected_mail_types"
 WHERE "mail_type_code" NOT IN (
     SELECT "mail_type_code" 
     FROM "mailing_costs" 
     WHERE "distance" IN ('Over 1000 km', 'International')
 );
+
+--7 посчитать средний вес и размеры для каждого наименования корреспонденции
+SELECT "mail_type_name",
+       AVG("min_weight_g") AS "avg_min_weight",
+       AVG("max_weight_g") AS "avg_max_weight",
+       AVG("min_length_mm") AS "avg_min_length",
+       AVG("max_length_mm") AS "avg_max_length",
+       AVG("min_width_mm") AS "avg_min_width",
+       AVG("max_width_mm") AS "avg_max_width",
+       AVG("min_height_mm") AS "avg_min_height",
+       AVG("max_height_mm") AS "avg_max_height"
+FROM "mail_types"
+GROUP BY "mail_type_name";
