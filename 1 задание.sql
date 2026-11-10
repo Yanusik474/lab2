@@ -39,3 +39,11 @@ WHERE "packaging" = 'Box'
 UPDATE "selected_mail_types"
 SET "mail_type_name" = 'Letter'
 WHERE "max_length_mm" <= 210 AND "max_width_mm" <= 148;
+
+--удалить из созданной таблицы все виды корреспонденции, которые можно отправить только внутри страны
+DELETE FROM "selected_mail_types"
+WHERE "mail_type_code" NOT IN (
+    SELECT "mail_type_code" 
+    FROM "mailing_costs" 
+    WHERE "distance" IN ('Over 1000 km', 'International')
+);
