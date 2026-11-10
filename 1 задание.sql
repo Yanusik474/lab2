@@ -34,3 +34,8 @@ SELECT "mail_type_code", "mail_type_name", "min_weight_g", "max_weight_g", "min_
 FROM "mail_types"
 WHERE "packaging" = 'Box'
   AND ("max_length_mm" IS NULL OR "max_width_mm" IS NULL OR "max_height_mm" IS NULL);
+
+--высозданные таблицы у всехвидов корреспонденции, соотвествующих размеров формата А5 или меньше,изменить название на "письмо"
+UPDATE "selected_mail_types"
+SET "mail_type_name" = 'Letter'
+WHERE "max_length_mm" <= 210 AND "max_width_mm" <= 148;
